@@ -91,6 +91,21 @@ services:
    - PGID=${GROUPID}
    - TZ=${TIMEZONE}
 
+ bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      - PUID=${USERID}
+      - PGID=${GROUPID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - /media-server/bazarr:/config
+      - /data-2/movies:/movies
+      - /data/tv-shows:/tv
+    ports:
+      - 6767:6767
+
  portainer:
   container_name: portainer
   image: portainer/portainer
