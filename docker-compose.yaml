@@ -106,6 +106,19 @@ services:
     ports:
       - 6767:6767
 
+ muximux:
+    image: linuxserver/muximux
+    container_name: muximux
+    environment:
+      - PUID=${USERID}
+      - PGID=${GROUPID}
+      - TZ=${TIMEZONE}
+    volumes:
+      - media-server/muximux:/config
+    ports:
+      - 80:80
+    restart: unless-stopped
+
  portainer:
   container_name: portainer
   image: portainer/portainer
