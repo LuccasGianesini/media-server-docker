@@ -1,4 +1,4 @@
-version: '3'
+version: 2
 services:
  plex:
   container_name: plex
@@ -20,12 +20,12 @@ services:
    - /mds-server-data/transcode:/transcode
   environment:
    - PUID=2658
+   - PGID=1001
    - TZ=America/Sao_Paulo
    - VERSION=latest
   devices:
    - /dev/dri:/dev/dri
   privileged: true
-
 
  radarr:
   container_name: radarr
@@ -40,6 +40,7 @@ services:
    - /data-2/media/movies:/movies
   environment:
    - PUID=2658
+   - PGID=1001
    - TZ=America/Sao_Paulo
 
  sonarr:
@@ -52,9 +53,10 @@ services:
   volumes:
    - /mds-server-data/sonarr:/config
    - /data-2/downloads:/downloads
-   - /data-2/media/tvshows:/tv
+   - /data/media/tvshows:/tv
   environment:
    - PUID=2658
+   - PGID=1001
    - TZ=America/Sao_Paulo
 
  transmission:
@@ -63,10 +65,10 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      - PUID=${USERID}
-      - PGID=${GROUPID}
+      - PUID=2658
+      - PGID=1001
       - TZ=America/Sao_Paulo
-      - TRANSMISSION_WEB_HOME=/combustion-release/
+      - TRANSMISSION_WEB_HOME=/transmission-web-control//
     volumes:
       - /mds-server-data/transmission:/config
       - /data-2/downloads:/downloads
@@ -85,8 +87,10 @@ services:
    - 9117:9117
   volumes:
    - /mds-server-data/jackett:/config
+   - /data-2/downloads:/downloads
   environment:
    - PUID=2658
+   - PGID=1001
    - TZ=America/Sao_Paulo
 
  bazarr:
@@ -96,6 +100,7 @@ services:
     restart: unless-stopped
     environment:
       - PUID=2658
+      - PGID=1001
       - TZ=America/Sao_Paulo
     volumes:
       - /mds-server-data/bazarr:/config
@@ -107,12 +112,25 @@ services:
  muximux:
     image: linuxserver/muximux
     container_name: muximux
-    network_mode: host
     restart: unless-stopped
     environment:
       - PUID=2658
+      - PGID=1001
       - TZ=America/Sao_Paulo
     volumes:
       - /mds-server-data/muximux:/config
     ports:
       - 6985:80
+ plexpy:
+    image: linuxserver/plexpy
+    container_name: plexpy
+    restart: unless-stopped
+    environment:
+      - PUID=2658
+      - PGID=1001
+      - TZ=America/Sao_Paulo
+    volumes:
+      - /mds-server-data/plexpy:/config
+      - /mds-server-data/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro
+    ports:
+      - 8981:8181

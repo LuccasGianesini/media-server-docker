@@ -1,5 +1,20 @@
-version: '3'
+version: 2
 services:
+ portainer:
+     container_name: portainer
+     image: portainer/portainer
+     network_mode: host
+     restart: unless-stopped
+     environment:
+      - PGID=1001
+      - PUID=2658
+      - TZ=America/Sao_Paulo
+     ports:
+      - 9000:9000
+     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mds-server-data/portainer:/data
+
  netdata:
     image: netdata/netdata
     container_name: netdata
@@ -8,6 +23,7 @@ services:
     environment:
       - TZ=America/Sao_Paulo
       - PGID=997
+      - PUID=2658
     ports:
       - 19999:19999
     cap_add:
