@@ -1,136 +1,209 @@
-version: 2
+version: "3"
+networks:
+  mds:
+    driver: bridge
 services:
- plex:
-  container_name: plex
-  image: linuxserver/plex
-  network_mode: host
-  restart: unless-stopped
-  ports:
-   - 32400:32400
-   - 32400:32400/udp
-   - 32469:32469
-   - 32469:32469/udp
-   - 5353:5353/udp
-   - 1900:1900/udp
-  volumes:
-   - /mds-server-data/plex:/config
-   - /data/media/tvshows:/data/tvshows
-   - /data-2/media/movies:/data/movies
-   - /data-2/media/documentaries:/data/documentaries
-   - /mds-server-data/transcode:/transcode
-  environment:
-   - PUID=2658
-   - PGID=1001
-   - TZ=America/Sao_Paulo
-   - VERSION=latest
-  devices:
-   - /dev/dri:/dev/dri
-  privileged: true
+  plex:
+    container_name: plex
+    image:  lscr.io/linuxserver/plex:latest
+    # network_mode: host
+    networks:
+      - mds
+    restart: unless-stopped
+    ports:
+     - 32400:32400
+     - 32400:32400/udp
+     - 32469:32469
+     - 32469:32469/udp
+     - 5353:5353/udp
+     - 1900:1900/udp
+    volumes:
+     - /services/plex:/config
+     - /data/media/tvshows:/data/tvshows
+     - /data/media/movies:/data/movies
+     - /data/media/documentaries:/data/documentaries
+     - /services/transcode:/transcode
+    environment:
+     - PUID=2658
+     - PGID=1001
+     - TZ=America/Sao_Paulo
+     - VERSION=docker
+     - PLEX_CLAIM=claim-a4dTmkQYV2FHcMqWyLJ4
+    devices:
+     - /dev/dri:/dev/dri
+    privileged: true
 
- radarr:
-  container_name: radarr
-  image: linuxserver/radarr
-  network_mode: host
-  restart: unless-stopped
-  ports:
-   - 7878:7878
-  volumes:
-   - /mds-server-data/radarr:/config
-   - /data-2/downloads:/downloads
-   - /data-2/media/movies:/movies
-  environment:
-   - PUID=2658
-   - PGID=1001
-   - TZ=America/Sao_Paulo
-
- sonarr:
-  container_name: sonarr
-  image: linuxserver/sonarr
-  network_mode: host
-  restart: unless-stopped
-  ports:
-   - 8989:8989
-  volumes:
-   - /mds-server-data/sonarr:/config
-   - /data-2/downloads:/downloads
-   - /data/media/tvshows:/tv
-  environment:
-   - PUID=2658
-   - PGID=1001
-   - TZ=America/Sao_Paulo
-
- transmission:
-    image: linuxserver/transmission
-    container_name: transmission
-    network_mode: host
+  portainer:
+    container_name: portainer
+    image: portainer/portainer
+    # network_mode: host
+    networks:
+      - mds
     restart: unless-stopped
     environment:
-      - PUID=2658
+      - PGID=1001
+      - PUID=1001
+      - TZ=America/Sao_Paulo
+    ports:
+      - 9001:9000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /services/portainer:/data
+
+  # jellyfin:
+  #   container_name: jellyfin
+  #   image: linuxserver/jellyfin
+  #   network_mode: host
+  #   restart: unless-stopped
+  #   ports:
+  #     - 8096:8096
+  #     - 8920:8920
+  #     - 7359:7359/udp
+  #     - 1900:1900/udp
+  #   volumes:
+  #     - /services/jellyfin:/config
+  #     - /data/media/tvshows:/data/tvshows
+  #     - /data/media/movies:/data/movies
+  #     - /data/media/documentaries:/data/documentaries
+  #     - /data/media/music:/data/music
+  #   environment:
+  #     - PUID=1001
+  #     - PGID=1001
+  #     - TZ=America/Sao_Paulo
+  #     - VERSION=latest
+  #   devices:
+  #     - /dev/dri:/dev/dri
+  #   privileged: true
+
+  radarr:
+    container_name: radarr
+    image: linuxserver/radarr
+    # network_mode: host
+    networks:
+      - mds
+    restart: unless-stopped
+    ports:
+      - 7878:7878
+    volumes:
+      - /services/radarr:/config
+      - /data/downloads:/downloads
+      - /data/media/movies:/movies
+    environment:
+      - PUID=1001
       - PGID=1001
       - TZ=America/Sao_Paulo
-      - TRANSMISSION_WEB_HOME=/transmission-web-control//
+
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr
+    # network_mode: host
+    networks:
+      - mds
+    restart: unless-stopped
+    ports:
+      - 8989:8989
     volumes:
-      - /mds-server-data/transmission:/config
-      - /data-2/downloads:/downloads
-      - /data-2/transmission-watch:/watch
+      - /services/sonarr:/config
+      - /data/downloads:/downloads
+      - /data/media/tvshows:/tv
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=America/Sao_Paulo
+
+  transmission-openvpn:
+    image: haugene/transmission-openvpn
+    restart: unless-stopped
+    container_name: transmission
+    # network_mode: host
+    networks:
+      - mds
+    cap_add:
+        - NET_ADMIN
+    volumes:
+      - /services/transmission:/config
+      - /data/downloads:/downloads
+      - /data/transmission-watch:/watch
+      - /data/ipvanish/:/etc/openvpn/custom/
+    environment:
+        - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
+        - OPENVPN_PROVIDER=custom
+        - OPENVPN_CONFIG=kps
+        - OPENVPN_USERNAME=11dc17c5b24cc9ece4ce2a064764f7cc
+        - OPENVPN_PASSWORD=7a274a525e453015cd6e0b77dbf4a92c
+        - LOCAL_NETWORK=172.16.48.0/20
+        - TRANSMISSION_WEB_UI=combustion
+        - PGID=1001
+        - TZ=America/Sao_Paulo
+        - PUID=1001
+    logging:
+        driver: json-file
+        options:
+            max-size: 10m
     ports:
       - 9091:9091
       - 51413:51413
       - 51413:51413/udp
 
- jackett:
-  container_name: jackett
-  image: linuxserver/jackett
-  network_mode: host
-  restart: unless-stopped
-  ports:
-   - 9117:9117
-  volumes:
-   - /mds-server-data/jackett:/config
-   - /data-2/downloads:/downloads
-  environment:
-   - PUID=2658
-   - PGID=1001
-   - TZ=America/Sao_Paulo
+  # transmission:
+  #   image: linuxserver/transmission
+  #   container_name: transmission
+  #   network_mode: host
+  #   restart: unless-stopped
+  #   environment:
+  #     - PUID=1001
+  #     - PGID=1001
+  #     - TZ=America/Sao_Paulo
+  #   volumes:
+  #     - /services/transmission:/config
+  #     - /data/downloads:/downloads
+  #     - /data/transmission-watch:/watch
+  #   ports:
+  #     - 9091:9091
+  #     - 51413:51413
+  #     - 51413:51413/udp
 
- bazarr:
-    image: linuxserver/bazarr
-    container_name: bazarr
-    network_mode: host
+  jackett:
+    container_name: jackett
+    image: dyonr/jackettvpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    # network_mode: host
+    networks:
+      - mds
     restart: unless-stopped
     environment:
-      - PUID=2658
+      - PUID=1001
+      - PGID=1001
+      - TZ=America/Sao_Paulo
+      - VPN_ENABLED=yes
+      - VPN_TYPE=openvpn
+      - VPN_USERNAME=11dc17c5b24cc9ece4ce2a064764f7cc
+      - VPN_PASSWORD=7a274a525e453015cd6e0b77dbf4a92c
+      - LAN_NETWORK=172.16.48.0/20
+    ports:
+      - 9117:9117
+    volumes:
+      - /services/jackett:/config
+      - /data/downloads:/downloads
+
+
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    # network_mode: host
+    networks:
+      - mds
+    restart: unless-stopped
+    environment:
+      - PUID=1001
       - PGID=1001
       - TZ=America/Sao_Paulo
     volumes:
-      - /mds-server-data/bazarr:/config
-      - /data-2/media/movies:/movies
+      - /services/bazarr:/config
+      - /data/media/movies:/movies
       - /data/media/tvshows:/tv
     ports:
       - 6767:6767
-
- muximux:
-    image: linuxserver/muximux
-    container_name: muximux
-    restart: unless-stopped
-    environment:
-      - PUID=2658
-      - PGID=1001
-      - TZ=America/Sao_Paulo
-    volumes:
-      - /mds-server-data/muximux:/config
-    ports:
-      - 6985:80
- plexpy:
-    image: linuxserver/plexpy
-    container_name: plexpy
-    restart: unless-stopped
-    environment:
-      - PUID=2658
-      - PGID=1001
-      - TZ=America/Sao_Paulo
-    volumes:
-      - /mds-server-data/plexpy:/config
-      - /mds-server-data/plex/Library/Application Support/Plex Media Server/Logs:/logs:ro
-    ports:
-      - 8981:8181
